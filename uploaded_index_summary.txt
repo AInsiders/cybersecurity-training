@@ -1,0 +1,19 @@
+Original Uploaded File Summary
+==============================
+
+Original uploaded file path in this environment:
+/mnt/data/index.html
+
+Observed file size: 15266 bytes
+
+What it contained:
+- A static Google-style sign-in screen.
+- Email and password input fields.
+- A Next/submit button.
+- Google-style visual branding and account links.
+
+Safety handling in this bundle:
+- The original file is not packaged unchanged.
+- The bundle includes index_SAFE_LOCAL_ONLY_training_demo.html instead.
+- The safe demo prevents form submission and external navigation.
+- The safe demo teaches the same concept without collecting credentials.

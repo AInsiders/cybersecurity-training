@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CyberProof — Local Training Demo</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #111827;
+      --muted: #6b7280;
+      --line: #d1d5db;
+      --accent: #2563eb;
+      --warn: #b45309;
+      --safe: #047857;
+      --danger: #b91c1c;
+      --soft: #eef2ff;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0b1020;
+        --card: #121a2e;
+        --text: #f9fafb;
+        --muted: #a3aab8;
+        --line: #2e3953;
+        --soft: #19213a;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Arial, Roboto, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .app { width: min(960px, 100%); }
+    .notice {
+      border: 1px solid var(--line);
+      background: var(--card);
+      border-radius: 18px;
+      padding: 18px;
+      margin-bottom: 16px;
+      display: grid;
+      gap: 8px;
+    }
+    .notice strong { color: var(--safe); }
+    .stage {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      overflow: hidden;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      min-height: 560px;
+    }
+    @media (max-width: 780px) {
+      .stage { grid-template-columns: 1fr; }
+    }
+    .left, .right { padding: 24px; }
+    .left { border-right: 1px solid var(--line); display: flex; align-items: center; justify-content: center; }
+    @media (max-width: 780px) { .left { border-right: 0; border-bottom: 1px solid var(--line); } }
+    .login-card {
+      width: min(390px, 100%);
+      border: 1px solid #dadce0;
+      border-radius: 10px;
+      padding: 36px;
+      background: white;
+      color: #202124;
+      transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+    }
+    .login-card.revealed { border-color: #f59e0b; box-shadow: 0 10px 40px rgba(180,83,9,.18); }
+    .g-logo { font-size: 30px; font-weight: 700; letter-spacing: -.04em; text-align: center; margin-bottom: 8px; }
+    .g-logo span:nth-child(1), .g-logo span:nth-child(4) { color: #4285f4; }
+    .g-logo span:nth-child(2), .g-logo span:nth-child(6) { color: #ea4335; }
+    .g-logo span:nth-child(3) { color: #fbbc05; }
+    .g-logo span:nth-child(5) { color: #34a853; }
+    .g-logo.warning span { color: #b45309 !important; }
+    .login-card h1 { font-weight: 400; font-size: 24px; text-align: center; margin: 0 0 8px; }
+    .login-card h2 { font-weight: 400; font-size: 16px; text-align: center; margin: 0 0 28px; }
+    label { display: block; font-size: 12px; margin-bottom: 6px; color: #5f6368; }
+    input {
+      width: 100%;
+      min-height: 48px;
+      border: 1.5px solid #d8d4d4;
+      border-radius: 4px;
+      padding: 10px 12px;
+      font-size: 16px;
+      margin-bottom: 14px;
+    }
+    input:disabled { background: #f8fafc; color: #4b5563; }
+    .row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 24px; }
+    .link { color: #1a73e8; font-size: 14px; font-weight: 600; }
+    button {
+      min-height: 44px;
+      border: 0;
+      border-radius: 8px;
+      padding: 0 16px;
+      font-weight: 700;
+      cursor: pointer;
+      background: var(--accent);
+      color: white;
+    }
+    button.secondary { background: transparent; color: var(--accent); border: 1px solid var(--line); }
+    button:disabled { opacity: .55; cursor: not-allowed; }
+    .right { display: grid; align-content: center; gap: 16px; }
+    .kicker { color: var(--muted); font-size: 13px; text-transform: uppercase; letter-spacing: .08em; font-weight: 700; }
+    .headline { font-size: clamp(28px, 5vw, 52px); line-height: .96; font-weight: 850; letter-spacing: -.05em; }
+    .sub { color: var(--muted); font-size: 17px; line-height: 1.5; }
+    .safe-line { color: var(--safe); font-weight: 800; }
+    .danger-line { color: var(--danger); font-weight: 800; }
+    .timeline { display: grid; gap: 10px; margin-top: 8px; }
+    .step {
+      border: 1px solid var(--line);
+      background: color-mix(in srgb, var(--card), var(--soft) 45%);
+      border-radius: 14px;
+      padding: 12px;
+      opacity: .55;
+      transform: translateY(4px);
+      transition: opacity .25s ease, transform .25s ease, border-color .25s ease;
+    }
+    .step.active { opacity: 1; transform: translateY(0); border-color: #f59e0b; }
+    .receipt { display: none; gap: 14px; }
+    .receipt.show { display: grid; }
+    .receipt-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    @media (max-width: 720px) { .receipt-grid { grid-template-columns: 1fr; } }
+    .receipt-card { border: 1px solid var(--line); border-radius: 16px; padding: 14px; background: var(--card); }
+    .receipt-card h3 { margin: 0 0 8px; font-size: 16px; }
+    .receipt-card ul { margin: 0; padding-left: 18px; color: var(--muted); }
+    .qr-wrap { display: none; gap: 16px; }
+    .qr-wrap.show { display: grid; }
+    .qr-card { display: grid; place-items: center; gap: 12px; padding: 18px; border: 1px solid var(--line); border-radius: 18px; background: var(--card); }
+    .qr {
+      width: 190px;
+      aspect-ratio: 1;
+      background:
+        linear-gradient(90deg,#111 10px,transparent 10px 20px,#111 20px 30px,transparent 30px 40px,#111 40px 50px,transparent 50px),
+        linear-gradient(#111 10px,transparent 10px 20px,#111 20px 30px,transparent 30px 40px,#111 40px 50px,transparent 50px),
+        #fff;
+      border: 14px solid #fff;
+      box-shadow: inset 0 0 0 2px #111, 0 8px 30px rgba(0,0,0,.16);
+      position: relative;
+    }
+    .qr::before, .qr::after { content: ""; position: absolute; width: 46px; height: 46px; border: 10px solid #111; background: #fff; }
+    .qr::before { left: 4px; top: 4px; }
+    .qr::after { right: 4px; top: 4px; }
+    .qr .finder { position: absolute; left: 4px; bottom: 4px; width: 46px; height: 46px; border: 10px solid #111; background: #fff; }
+    .small { font-size: 13px; color: var(--muted); }
+    .hidden { display: none !important; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  </style>
+</head>
+<body>
+  <main class="app" id="app">
+    <section class="notice" aria-live="polite">
+      <div><strong>Training demo.</strong> This page is intentionally built to teach phishing and QR-code risk. It does not submit, upload, store, fetch, track, or save credentials.</div>
+      <div class="small">For a real app, keep this same privacy boundary: lesson inputs only exist in memory until the report is shown, then clear them.</div>
+    </section>
+
+    <section class="stage" aria-label="Cybersecurity training demo">
+      <div class="left">
+        <div class="login-card" id="loginCard">
+          <div class="g-logo" id="logo" aria-label="simulated Google-style logo"><span>G</span><span>o</span><span>o</span><span>g</span><span>l</span><span>e</span></div>
+          <h1 id="title">Sign in</h1>
+          <h2 id="subtitle">Use your Google Account</h2>
+          <form id="demoForm" autocomplete="off" novalidate>
+            <label id="emailLabel" for="email">Email</label>
+            <input id="email" name="email" type="text" inputmode="email" placeholder="you@example.com" autocomplete="off">
+            <label id="passLabel" for="password">Password</label>
+            <input id="password" name="password" type="password" placeholder="Use demo text only" autocomplete="off">
+            <div class="row">
+              <span class="link" id="createLink">Create account</span>
+              <button id="nextBtn" type="submit">Next</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="right">
+        <div id="lessonIntro">
+          <div class="kicker">Lesson 1</div>
+          <div class="headline">Can you trust what you see?</div>
+          <p class="sub">Start typing a demo email. The page will stop itself and reveal why a familiar login screen is not proof of safety.</p>
+        </div>
+
+        <div class="timeline" id="timeline" aria-live="polite">
+          <div class="step" id="s1">Waiting for the first interaction…</div>
+          <div class="step" id="s2">The heading can change because this page controls it.</div>
+          <div class="step" id="s3">The logo can change because a logo is only an element on the screen.</div>
+          <div class="step" id="s4">Input fields belong to whoever controls the page.</div>
+          <div class="step" id="s5">A malicious version could keep going instead of stopping.</div>
+        </div>
+
+        <div class="receipt" id="receipt">
+          <div class="kicker">Session Data Receipt</div>
+          <div class="headline">What could have happened?</div>
+          <p class="sub"><span class="safe-line">You’re safe:</span> nothing was sent, stored, uploaded, or reused. This report is generated only from in-memory demo state.</p>
+          <div class="receipt-grid">
+            <div class="receipt-card">
+              <h3>Fake page could have collected</h3>
+              <ul>
+                <li>Email text typed into the field</li>
+                <li>Password if the user entered one</li>
+                <li>Button taps and timing</li>
+                <li>Device/browser basics visible to the page</li>
+              </ul>
+            </div>
+            <div class="receipt-card">
+              <h3>If an attacker signed in</h3>
+              <ul>
+                <li>Gmail, Drive, Photos, Contacts, Calendar</li>
+                <li>Password resets for other accounts</li>
+                <li>Impersonation through email</li>
+                <li>Recovery settings or connected apps</li>
+              </ul>
+            </div>
+            <div class="receipt-card">
+              <h3>This demo actually did</h3>
+              <ul>
+                <li>Real Google login: 0</li>
+                <li>Real password collected: 0</li>
+                <li>Data sent to server: 0</li>
+                <li>Stored after close: 0</li>
+              </ul>
+            </div>
+            <div class="receipt-card">
+              <h3>Core lesson</h3>
+              <ul>
+                <li>Branding can lie</li>
+                <li>Security wording can lie</li>
+                <li>The safe part is verification</li>
+              </ul>
+            </div>
+          </div>
+          <button id="showQr" type="button">Continue: safer-looking QR login</button>
+        </div>
+
+        <div class="qr-wrap" id="qrLesson">
+          <div class="kicker">Lesson 2</div>
+          <div class="headline">A QR code can look safer.</div>
+          <p class="sub">After the fake-login lesson, this second stage claims a QR code is a more secure way to access the website. The twist: a QR code is only safer if it points to a real, verified login flow.</p>
+          <div class="qr-card">
+            <strong>Secure Google Sign-In</strong>
+            <div class="qr" aria-label="decorative QR training code"><div class="finder"></div></div>
+            <div class="small">Scan to securely access our website with Google</div>
+            <button id="scanBtn" type="button">Simulate scan</button>
+          </div>
+          <div class="receipt-card hidden" id="qrReport" aria-live="polite">
+            <h3>Hold up again.</h3>
+            <p><strong>You trusted the QR code because it was described as safer.</strong></p>
+            <p class="safe-line">This stayed in the browser. Nothing was sent. Nothing was stored. Your phone was not accessed.</p>
+            <ul>
+              <li>A QR code is encoded instructions, often a link.</li>
+              <li>It can open a real OAuth login or a fake login page.</li>
+              <li>It can redirect, track, prompt permissions, or lead to a fake update/app install.</li>
+              <li>The safe part is not the square. The safe part is the verified destination and login method.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (() => {
+      const root = document.getElementById('app');
+      if (!root || root.dataset.ready) return;
+      root.dataset.ready = 'true';
+
+      const email = document.getElementById('email');
+      const password = document.getElementById('password');
+      const form = document.getElementById('demoForm');
+      const title = document.getElementById('title');
+      const subtitle = document.getElementById('subtitle');
+      const logo = document.getElementById('logo');
+      const loginCard = document.getElementById('loginCard');
+      const emailLabel = document.getElementById('emailLabel');
+      const passLabel = document.getElementById('passLabel');
+      const nextBtn = document.getElementById('nextBtn');
+      const createLink = document.getElementById('createLink');
+      const intro = document.getElementById('lessonIntro');
+      const receipt = document.getElementById('receipt');
+      const timeline = document.getElementById('timeline');
+      const steps = [...timeline.querySelectorAll('.step')];
+      const showQr = document.getElementById('showQr');
+      const qrLesson = document.getElementById('qrLesson');
+      const scanBtn = document.getElementById('scanBtn');
+      const qrReport = document.getElementById('qrReport');
+
+      const state = { started: false, typedDemoEmail: '', beganAt: Date.now() };
+      const timers = [];
+      const later = (fn, ms) => { const id = setTimeout(fn, ms); timers.push(id); return id; };
+
+      function activate(index) { steps[index]?.classList.add('active'); }
+
+      function beginReveal() {
+        if (state.started) return;
+        state.started = true;
+        state.typedDemoEmail = email.value || '';
+
+        email.disabled = true;
+        password.disabled = true;
+        nextBtn.disabled = true;
+        loginCard.classList.add('revealed');
+        activate(0);
+
+        later(() => { title.textContent = 'Hold up.'; subtitle.textContent = 'You’re safe. Nothing left this device.'; activate(1); }, 650);
+        later(() => { logo.classList.add('warning'); logo.textContent = 'Not Google'; activate(2); }, 1450);
+        later(() => { emailLabel.textContent = 'Information this page could see'; email.value = state.typedDemoEmail ? state.typedDemoEmail.replace(/^(.).+(@.*)?$/, '$1••••$2') : 'demo input'; activate(3); }, 2300);
+        later(() => { passLabel.textContent = 'A real password would be dangerous here'; password.value = ''; password.placeholder = 'blocked for safety'; nextBtn.textContent = 'Would send to page owner'; createLink.textContent = 'Links can be faked too'; activate(4); }, 3200);
+        later(() => { intro.classList.add('hidden'); timeline.classList.add('hidden'); receipt.classList.add('show'); }, 4300);
+      }
+
+      email.addEventListener('input', () => {
+        if (!state.started && email.value.trim().length >= 3) beginReveal();
+      });
+      password.addEventListener('focus', () => beginReveal());
+      form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        beginReveal();
+      });
+      showQr.addEventListener('click', () => {
+        receipt.classList.remove('show');
+        qrLesson.classList.add('show');
+      });
+      scanBtn.addEventListener('click', () => {
+        qrReport.classList.remove('hidden');
+        scanBtn.disabled = true;
+        scanBtn.textContent = 'Scan simulated locally';
+      });
+      window.addEventListener('pagehide', () => timers.forEach(clearTimeout), { once: true });
+    })();
+  </script>
+</body>
+</html>
